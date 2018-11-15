@@ -87,9 +87,9 @@ public class UnixNet {
 	}
 
 	static int SOCKADDR_LEN() {
-    return SizeOf.get(Un.sockaddr_un.class);
+		return SizeOf.get(Un.sockaddr_un.class);
 	}
-	
+
 	public static void bind(FileDescriptor fd, UnixSocketAddress usa) throws IOException {
 		Socket.sockaddr sa = StackValue.get(SOCKADDR_LEN());
 		CIntPointer sa_len_Pointer = StackValue.get(CIntPointer.class);
@@ -156,40 +156,21 @@ public class UnixNet {
 			arglen_Pointer.write(SizeOf.get(Socket.linger.class));
 		}
 		if (mayNeedConversion) {
-        //     1230         socklen_t socklen = *len;
-        CIntPointer socklen_Pointer = StackValue.get(CIntPointer.class);
-        socklen_Pointer.write(arglen_Pointer.read());
-        //     1231         rv = getsockopt(fd, level, opt, result, &socklen);
-        int rv = Socket.getsockopt(fdval(fdo), level, opt, result_Pointer, socklen_Pointer);
-        //     1232         *len = socklen;
-        arglen_Pointer.write(socklen_Pointer.read());
-		    //     1234 #endif
-		    //     1235
-		    //     1236     if (rv < 0) {
-		    if (rv < 0) {
-		    //     1237         return rv;
-		        return rv;
-		    }
-		    //     1239
-		    //     1240 #ifdef __linux__
-		    if (IsDefined.__linux__()) {
-		        //     1241     /*
-		        //     1242      * On Linux SO_SNDBUF/SO_RCVBUF aren't symmetric. This
-		        //     1243      * stems from additional socket structures in the send
-		        //     1244      * and receive buffers.
-		        //     1245      */
-		        //     1246     if ((level == SOL_SOCKET) && ((opt == SO_SNDBUF)
-		        //     1247                                   || (opt == SO_RCVBUF))) {
-		        if ((level == Socket.SOL_SOCKET()) && ((opt == Socket.SO_SNDBUF()) || (opt == Socket.SO_RCVBUF()))) {
-		            //     1248         int n = *((int *)result);
-		            n = ((CIntPointer) result_Pointer).read();
-		            //     1249         n /= 2;
-		            n /= 2;
-		            //     1250         *((int *)result) = n;
-		            ((CIntPointer) result_Pointer).write(n);
-		        }
-		    }
-		    n = Socket.getsockopt(fdval(fdo), level, opt, arg, arglen_Pointer);
+			CIntPointer socklen_Pointer = StackValue.get(CIntPointer.class);
+			socklen_Pointer.write(arglen_Pointer.read());
+			int rv = Socket.getsockopt(fdval(fdo), level, opt, result_Pointer, socklen_Pointer);
+			arglen_Pointer.write(socklen_Pointer.read());
+			if (rv < 0) {
+				return rv;
+			}
+			if (IsDefined.__linux__()) {
+				if ((level == Socket.SOL_SOCKET()) && ((opt == Socket.SO_SNDBUF()) || (opt == Socket.SO_RCVBUF()))) {
+					n = ((CIntPointer) result_Pointer).read();
+					n /= 2;
+					((CIntPointer) result_Pointer).write(n);
+				}
+			}
+			n = Socket.getsockopt(fdval(fdo), level, opt, arg, arglen_Pointer);
 		} else {
 			n = Socket.getsockopt(fdval(fdo), level, opt, arg, arglen_Pointer);
 		}
@@ -241,12 +222,12 @@ public class UnixNet {
 		if (mayNeedConversion) {
 			CIntPointer bufsize = null;
 			if (IsDefined.__linux__()) {
-        if (level == Socket.SOL_SOCKET() && opt == Socket.SO_RCVBUF()) {
-            bufsize = (CIntPointer) parg;
-            if (bufsize.read() < 1024) {
-                bufsize.write(1024);
-            }
-        }
+				if (level == Socket.SOL_SOCKET() && opt == Socket.SO_RCVBUF()) {
+					bufsize = (CIntPointer) parg;
+					if (bufsize.read() < 1024) {
+						bufsize.write(1024);
+					}
+				}
 			}
 			n = Socket.setsockopt(fdval(fdo), level, opt, parg, (int) arglen);
 		} else {
@@ -351,6 +332,32 @@ public class UnixNet {
 		}
 		Errno.set_errno(errorValue);
 		throw xn;
+	}
+	
+	public static UnixSocketAddress getsockname(int sockfd) {
+		UnixSocketAddress local = new UnixSocketAddress();
+		Socket.sockaddr sa = StackValue.get(SOCKADDR_LEN());
+		CIntPointer sa_len_Pointer = StackValue.get(CIntPointer.class);
+		sa_len_Pointer.write(SOCKADDR_LEN());
+		if (Socket.getsockname(sockfd, sa, sa_len_Pointer) < 0) {
+			throw new Error(Native.getLastErrorString());
+		}
+		Un.sockaddr_un unAddr = (Un.sockaddr_un) sa;
+		local.setPath(CTypeConversion.toJavaString(unAddr.sun_path()));
+		return local;
+	}
+
+	public static UnixSocketAddress getpeername(int sockfd) {
+		UnixSocketAddress remote = new UnixSocketAddress();
+		Socket.sockaddr sa = StackValue.get(SOCKADDR_LEN());
+		CIntPointer sa_len_Pointer = StackValue.get(CIntPointer.class);
+		sa_len_Pointer.write(SOCKADDR_LEN());
+		if (Socket.getpeername(sockfd, sa, sa_len_Pointer) < 0) {
+			throw new Error(Native.getLastErrorString());
+		}
+		Un.sockaddr_un unAddr = (Un.sockaddr_un) sa;
+		remote.setPath(CTypeConversion.toJavaString(unAddr.sun_path()));
+		return remote;
 	}
 
 }

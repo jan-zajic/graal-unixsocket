@@ -34,7 +34,6 @@ import net.jzajic.graalvm.socket.UnixSocketAddress;
 /**
  * An implementation of SocketChannels
  */
-
 class UnixSocketChannelImpl
 		extends SocketChannel {
 	// Our file descriptor object
@@ -60,7 +59,8 @@ class UnixSocketChannelImpl
 	private int state = ST_UNINITIALIZED;
 
 	// Binding
-	private UnixSocketAddress socketAdress;
+	private UnixSocketAddress remoteAddress = null;
+	private UnixSocketAddress localAddress = null;
 
 	// Input/Output open
 	private boolean isInputOpen = true;
@@ -81,21 +81,13 @@ class UnixSocketChannelImpl
 	}
 
 	@Override
-	public SocketAddress getLocalAddress() throws IOException {
-		synchronized (stateLock) {
-			if (!isOpen())
-				throw new ClosedChannelException();
-			return socketAdress;
-		}
+	public SocketAddress getRemoteAddress() throws IOException {
+		return remoteAddress;
 	}
 
 	@Override
-	public SocketAddress getRemoteAddress() throws IOException {
-		synchronized (stateLock) {
-			if (!isOpen())
-				throw new ClosedChannelException();
-			return socketAdress;
-		}
+	public SocketAddress getLocalAddress() throws IOException {
+		return localAddress;
 	}
 
 	@Override
@@ -243,15 +235,25 @@ class UnixSocketChannelImpl
 		Native.setBlocking(fdVal, block);
 	}
 
-	public UnixSocketAddress localAddress() {
-		synchronized (stateLock) {
-			return socketAdress;
+	public final UnixSocketAddress getRemoteSocketAddress() {
+		if (!isConnected()) {
+			return null;
+		}
+
+		if (remoteAddress != null) {
+			return remoteAddress;
+		} else {
+			remoteAddress = UnixNet.getpeername(fdVal);
+			return remoteAddress;
 		}
 	}
 
-	public UnixSocketAddress remoteAddress() {
-		synchronized (stateLock) {
-			return socketAdress;
+	public final UnixSocketAddress getLocalSocketAddress() {
+		if (localAddress != null) {
+			return localAddress;
+		} else {
+			localAddress = UnixNet.getsockname(fdVal);
+			return localAddress;
 		}
 	}
 
@@ -262,15 +264,19 @@ class UnixSocketChannelImpl
 				throw new ClosedChannelException();
 			if (state == ST_PENDING)
 				throw new ConnectionPendingException();
-			if (socketAdress != null)
-				throw new AlreadyBoundException();
-			UnixSocketAddress usa = (local == null) ? new UnixSocketAddress() : (UnixSocketAddress) local;
-			UnixNet.bind(fd, usa);
-			this.socketAdress = (UnixSocketAddress) local;
+			if (localAddress != null)
+				throw new AlreadyBoundException();			
+			this.localAddress = bind((UnixSocketAddress) local);
 		}
 		return this;
 	}
 
+	UnixSocketAddress bind(UnixSocketAddress local) throws IOException {
+    UnixSocketAddress usa = (local == null) ? new UnixSocketAddress() : (UnixSocketAddress) local;
+		UnixNet.bind(fd, usa);
+    return UnixNet.getsockname(fdVal);
+	}
+	
 	@Override
 	public boolean isConnected() {
 		synchronized (stateLock) {
@@ -339,13 +345,13 @@ class UnixSocketChannelImpl
 					// invocation
 					state = ST_CONNECTED;
 					if (isOpen())
-						this.socketAdress = usa;
+						this.remoteAddress = usa;
 					return true;
 				}
 				// If nonblocking and no exception then connection
 				// pending; disallow another invocation
 				if (!isBlocking()) {
-					this.socketAdress = usa;
+					this.remoteAddress = usa;
 					state = ST_PENDING;
 				} else
 					assert false;
@@ -377,7 +383,7 @@ class UnixSocketChannelImpl
 						for (;;) {
 							n = UnixNet.connect(
 									fd,
-										this.socketAdress);
+										this.remoteAddress);
 							if ((n == IOStatus.INTERRUPTED)
 									&& isOpen())
 								continue;
@@ -387,7 +393,7 @@ class UnixSocketChannelImpl
 						for (;;) {
 							n = UnixNet.connect(
 									fd,
-										this.socketAdress);
+										this.remoteAddress);
 							if (n == 0) {
 								// Loop in case of
 								// spurious notifications
@@ -546,9 +552,13 @@ class UnixSocketChannelImpl
 						sb.append(" oshut");
 					break;
 				}
-				if (remoteAddress() != null) {
-					sb.append(" address=");
-					sb.append(remoteAddress().toString());
+				if (localAddress != null) {
+					sb.append(" localAddress=");
+					sb.append(localAddress.toString());
+				}
+				if (remoteAddress != null) {
+					sb.append(" remoteAddress=");
+					sb.append(remoteAddress.toString());
 				}
 			}
 		}
@@ -558,7 +568,11 @@ class UnixSocketChannelImpl
 
 	@Override
 	public Socket socket() {
-		throw new UnsupportedOperationException();
+		return new UnixSocket(this);
+	}
+
+	public boolean isBound() {
+		return localAddress != null;
 	}
 
 }
