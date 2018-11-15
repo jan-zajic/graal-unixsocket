@@ -1,4 +1,4 @@
-package com.oracle.svm.core.posix;
+package net.jzajic.graalvm.posix;
 
 /**
  * Represents the level/name of a socket option

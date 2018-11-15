@@ -1,4 +1,4 @@
-package com.oracle.svm.core.posix;
+package net.jzajic.graalvm.posix;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -6,6 +6,7 @@ import java.nio.ByteBuffer;
 import org.graalvm.nativeimage.c.type.CCharPointer;
 import org.graalvm.word.WordFactory;
 
+import com.oracle.svm.core.posix.PosixUtils;
 import com.oracle.svm.core.posix.headers.Errno;
 import com.oracle.svm.core.posix.headers.Fcntl;
 import com.oracle.svm.core.posix.headers.Unistd;

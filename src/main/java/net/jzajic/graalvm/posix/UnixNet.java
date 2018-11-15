@@ -1,4 +1,4 @@
-package com.oracle.svm.core.posix;
+package net.jzajic.graalvm.posix;
 
 import java.io.FileDescriptor;
 import java.io.IOException;
@@ -17,6 +17,8 @@ import org.graalvm.nativeimage.c.type.VoidPointer;
 import org.graalvm.nativeimage.c.type.WordPointer;
 import org.graalvm.word.WordFactory;
 
+import com.oracle.svm.core.os.IsDefined;
+import com.oracle.svm.core.posix.PosixUtils;
 import com.oracle.svm.core.posix.headers.Errno;
 import com.oracle.svm.core.posix.headers.LibC;
 import com.oracle.svm.core.posix.headers.NetinetIn;
@@ -68,7 +70,7 @@ public class UnixNet {
 		if (UnixNet.inetAddressToSockaddr(iao, sa_Pointer, sa_len_Pointer) != 0) {
 			return IOStatus.THROWN;
 		}
-		rv = Socket.connect(PosixJavaNIOSubstitutions.fdval(fdo), sa_Pointer, sa_len_Pointer.read());
+		rv = Socket.connect(PosixUtils.getFD(fdo), sa_Pointer, sa_len_Pointer.read());
 		if (rv != 0) {
 			if (Errno.errno() == Errno.EINPROGRESS()) {
 				return IOStatus.UNAVAILABLE;
@@ -84,15 +86,19 @@ public class UnixNet {
 		return PosixUtils.getFD(fdo);
 	}
 
+	static int SOCKADDR_LEN() {
+    return SizeOf.get(Un.sockaddr_un.class);
+	}
+	
 	public static void bind(FileDescriptor fd, UnixSocketAddress usa) throws IOException {
-		Socket.sockaddr sa = StackValue.get(JavaNetNetUtilMD.SOCKADDR_LEN());
+		Socket.sockaddr sa = StackValue.get(SOCKADDR_LEN());
 		CIntPointer sa_len_Pointer = StackValue.get(CIntPointer.class);
-		sa_len_Pointer.write(JavaNetNetUtilMD.SOCKADDR_LEN());
+		sa_len_Pointer.write(SOCKADDR_LEN());
 		int rv = 0;
 		if (UnixNet.inetAddressToSockaddr(usa, sa, sa_len_Pointer) != 0) {
 			return;
 		}
-		rv = JavaNetNetUtilMD.NET_Bind(PosixUtils.getFD(fd), sa, sa_len_Pointer.read());
+		rv = Socket.bind(PosixUtils.getFD(fd), sa, sa_len_Pointer.read());
 		if (rv != 0) {
 			UnixNet.handleSocketError(Errno.errno());
 		}
@@ -150,7 +156,40 @@ public class UnixNet {
 			arglen_Pointer.write(SizeOf.get(Socket.linger.class));
 		}
 		if (mayNeedConversion) {
-			n = JavaNetNetUtilMD.NET_GetSockOpt(fdval(fdo), level, opt, arg, arglen_Pointer);
+        //     1230         socklen_t socklen = *len;
+        CIntPointer socklen_Pointer = StackValue.get(CIntPointer.class);
+        socklen_Pointer.write(arglen_Pointer.read());
+        //     1231         rv = getsockopt(fd, level, opt, result, &socklen);
+        int rv = Socket.getsockopt(fdval(fdo), level, opt, result_Pointer, socklen_Pointer);
+        //     1232         *len = socklen;
+        arglen_Pointer.write(socklen_Pointer.read());
+		    //     1234 #endif
+		    //     1235
+		    //     1236     if (rv < 0) {
+		    if (rv < 0) {
+		    //     1237         return rv;
+		        return rv;
+		    }
+		    //     1239
+		    //     1240 #ifdef __linux__
+		    if (IsDefined.__linux__()) {
+		        //     1241     /*
+		        //     1242      * On Linux SO_SNDBUF/SO_RCVBUF aren't symmetric. This
+		        //     1243      * stems from additional socket structures in the send
+		        //     1244      * and receive buffers.
+		        //     1245      */
+		        //     1246     if ((level == SOL_SOCKET) && ((opt == SO_SNDBUF)
+		        //     1247                                   || (opt == SO_RCVBUF))) {
+		        if ((level == Socket.SOL_SOCKET()) && ((opt == Socket.SO_SNDBUF()) || (opt == Socket.SO_RCVBUF()))) {
+		            //     1248         int n = *((int *)result);
+		            n = ((CIntPointer) result_Pointer).read();
+		            //     1249         n /= 2;
+		            n /= 2;
+		            //     1250         *((int *)result) = n;
+		            ((CIntPointer) result_Pointer).write(n);
+		        }
+		    }
+		    n = Socket.getsockopt(fdval(fdo), level, opt, arg, arglen_Pointer);
 		} else {
 			n = Socket.getsockopt(fdval(fdo), level, opt, arg, arglen_Pointer);
 		}
@@ -200,7 +239,16 @@ public class UnixNet {
 			}
 		}
 		if (mayNeedConversion) {
-			n = JavaNetNetUtilMD.NET_SetSockOpt(fdval(fdo), level, opt, parg, (int) arglen);
+			CIntPointer bufsize = null;
+			if (IsDefined.__linux__()) {
+        if (level == Socket.SOL_SOCKET() && opt == Socket.SO_RCVBUF()) {
+            bufsize = (CIntPointer) parg;
+            if (bufsize.read() < 1024) {
+                bufsize.write(1024);
+            }
+        }
+			}
+			n = Socket.setsockopt(fdval(fdo), level, opt, parg, (int) arglen);
 		} else {
 			n = Socket.setsockopt(fdval(fdo), level, opt, parg, (int) arglen);
 		}
@@ -270,7 +318,7 @@ public class UnixNet {
 	public static int poll(FileDescriptor fdo, int events, long timeout) throws IOException {
 		Poll.pollfd pfd = StackValue.get(Poll.pollfd.class);
 		int rv;
-		pfd.set_fd(PosixJavaNIOSubstitutions.fdval(fdo));
+		pfd.set_fd(fdval(fdo));
 		pfd.set_events((short) events);
 		rv = Poll.poll(pfd, 1, (int) timeout);
 		if (rv >= 0) {

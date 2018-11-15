@@ -23,11 +23,11 @@ import org.graalvm.nativeimage.c.type.CCharPointer;
 import org.graalvm.nativeimage.c.type.CTypeConversion;
 import org.graalvm.word.WordFactory;
 
-import com.oracle.svm.core.posix.Native;
-import com.oracle.svm.core.posix.UnixNet;
 import com.oracle.svm.core.posix.headers.Errno;
 import com.oracle.svm.core.posix.headers.LibC;
 
+import net.jzajic.graalvm.posix.Native;
+import net.jzajic.graalvm.posix.UnixNet;
 import net.jzajic.graalvm.socket.UnixProtocolFamily;
 import net.jzajic.graalvm.socket.UnixSocketAddress;
 

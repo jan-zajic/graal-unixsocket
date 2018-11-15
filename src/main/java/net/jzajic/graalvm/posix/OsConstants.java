@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.oracle.svm.core.posix;
+package net.jzajic.graalvm.posix;
 
 public final class OsConstants {
     private OsConstants() { }

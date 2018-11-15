@@ -1,4 +1,6 @@
-package com.oracle.svm.core.posix;
+package net.jzajic.graalvm.posix;
+
+import static net.jzajic.graalvm.posix.OsConstants.*;
 
 import java.net.ProtocolFamily;
 import java.net.SocketOption;
@@ -6,8 +8,6 @@ import java.net.StandardProtocolFamily;
 import java.net.StandardSocketOptions;
 import java.util.HashMap;
 import java.util.Map;
-
-import static com.oracle.svm.core.posix.OsConstants.*;
 
 class SocketOptionRegistry {                                                   
     private SocketOptionRegistry() { }                                         
