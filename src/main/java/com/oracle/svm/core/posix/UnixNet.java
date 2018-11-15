@@ -17,8 +17,6 @@ import org.graalvm.nativeimage.c.type.VoidPointer;
 import org.graalvm.nativeimage.c.type.WordPointer;
 import org.graalvm.word.WordFactory;
 
-import com.oracle.svm.core.posix.PosixJavaNIOSubstitutions.Target_sun_nio_ch_IOStatus;
-import com.oracle.svm.core.posix.PosixJavaNIOSubstitutions.Util_sun_nio_ch_Net;
 import com.oracle.svm.core.posix.headers.Errno;
 import com.oracle.svm.core.posix.headers.LibC;
 import com.oracle.svm.core.posix.headers.NetinetIn;
@@ -30,13 +28,14 @@ import net.jzajic.graalvm.headers.FdUtils.Util_java_io_FileDescriptor;
 import net.jzajic.graalvm.headers.Un;
 import net.jzajic.graalvm.socket.UnixProtocolFamily;
 import net.jzajic.graalvm.socket.UnixSocketAddress;
+import net.jzajic.graalvm.socket.channel.IOStatus;
 
 public class UnixNet {
 
 	public final static int SHUT_RD = 0;
-  public final static int SHUT_WR = 1;
-  public final static int SHUT_RDWR = 2;
-	
+	public final static int SHUT_WR = 1;
+	public final static int SHUT_RDWR = 2;
+
 	//unspecified protocol family
 	public static final ProtocolFamily UNSPEC = new ProtocolFamily() {
 		public String name() {
@@ -56,7 +55,7 @@ public class UnixNet {
 		int type = (stream ? Socket.SOCK_STREAM() : Socket.SOCK_DGRAM());
 		fd = Socket.socket(Socket.AF_UNIX(), type, 0);
 		if (fd < 0) {
-			return Util_sun_nio_ch_Net.handleSocketError(Errno.errno());
+			return UnixNet.handleSocketError(Errno.errno());
 		}
 		return fd;
 	}
@@ -67,16 +66,16 @@ public class UnixNet {
 		CIntPointer sa_len_Pointer = StackValue.get(CIntPointer.class);
 		sa_len_Pointer.write(SizeOf.get(Un.sockaddr_un.class));
 		if (NET_InetAddressToSockaddr(iao, sa_Pointer, sa_len_Pointer) != 0) {
-			return Target_sun_nio_ch_IOStatus.IOS_THROWN;
+			return IOStatus.THROWN;
 		}
 		rv = Socket.connect(PosixJavaNIOSubstitutions.fdval(fdo), sa_Pointer, sa_len_Pointer.read());
 		if (rv != 0) {
 			if (Errno.errno() == Errno.EINPROGRESS()) {
-				return Target_sun_nio_ch_IOStatus.IOS_UNAVAILABLE;
+				return IOStatus.UNAVAILABLE;
 			} else if (Errno.errno() == Errno.EINTR()) {
-				return Target_sun_nio_ch_IOStatus.IOS_INTERRUPTED;
+				return IOStatus.INTERRUPTED;
 			}
-			return Util_sun_nio_ch_Net.handleSocketError(Errno.errno());
+			return UnixNet.handleSocketError(Errno.errno());
 		}
 		return 1;
 	}
@@ -95,7 +94,7 @@ public class UnixNet {
 		}
 		rv = JavaNetNetUtilMD.NET_Bind(PosixUtils.getFD(fd), sa, sa_len_Pointer.read());
 		if (rv != 0) {
-			Util_sun_nio_ch_Net.handleSocketError(Errno.errno());
+			UnixNet.handleSocketError(Errno.errno());
 		}
 	}
 
@@ -264,7 +263,7 @@ public class UnixNet {
 	public static void shutdown(FileDescriptor fdo, int jhow) throws IOException {
 		int how = (jhow == sun.nio.ch.Net.SHUT_RD) ? sun.nio.ch.Net.SHUT_RD : (jhow == sun.nio.ch.Net.SHUT_WR) ? sun.nio.ch.Net.SHUT_WR : sun.nio.ch.Net.SHUT_RDWR;
 		if ((Socket.shutdown(fdval(fdo), how) < 0) && Errno.errno() != Errno.ENOTCONN()) {
-			Util_sun_nio_ch_Net.handleSocketError(Errno.errno());
+			UnixNet.handleSocketError(Errno.errno());
 		}
 	}
 
@@ -277,11 +276,33 @@ public class UnixNet {
 		if (rv >= 0) {
 			return pfd.events();
 		} else if (Errno.errno() == Errno.EINTR()) {
-			return Target_sun_nio_ch_IOStatus.IOS_INTERRUPTED;
+			return IOStatus.INTERRUPTED;
 		} else {
-			Util_sun_nio_ch_Net.handleSocketError(Errno.errno());
-			return Target_sun_nio_ch_IOStatus.IOS_THROWN;
+			UnixNet.handleSocketError(Errno.errno());
+			return IOStatus.THROWN;
 		}
+	}
+
+	static int handleSocketError(int errorValue) throws IOException {
+		IOException xn;
+		final String exceptionString = "NioSocketError";
+		if (errorValue == Errno.EINPROGRESS()) {
+			return 0;
+		} else if (errorValue == Errno.EPROTO()) {
+			xn = new java.net.ProtocolException(PosixUtils.errorString(errorValue, exceptionString));
+		} else if (errorValue == Errno.ECONNREFUSED()) {
+			xn = new java.net.ConnectException(PosixUtils.errorString(errorValue, exceptionString));
+		} else if (errorValue == Errno.ETIMEDOUT()) {
+			xn = new java.net.ConnectException(PosixUtils.errorString(errorValue, exceptionString));
+		} else if (errorValue == Errno.EHOSTUNREACH()) {
+			xn = new java.net.NoRouteToHostException(PosixUtils.errorString(errorValue, exceptionString));
+		} else if ((errorValue == Errno.EADDRINUSE()) || (errorValue == Errno.EADDRNOTAVAIL())) {
+			xn = new java.net.BindException(PosixUtils.errorString(errorValue, exceptionString));
+		} else {
+			xn = new java.net.SocketException(PosixUtils.errorString(errorValue, exceptionString));
+		}
+		Errno.set_errno(errorValue);
+		throw xn;
 	}
 
 }
