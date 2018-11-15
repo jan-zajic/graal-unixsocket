@@ -17,8 +17,8 @@ import com.oracle.svm.core.posix.headers.Socket;
 import com.oracle.svm.core.posix.headers.Socket.sockaddr;
 
 import net.jzajic.graalvm.headers.FdUtils.Util_java_io_FileDescriptor;
+import net.jzajic.graalvm.socket.channel.UnixSocketSelectorProvider;
 import net.jzajic.graalvm.headers.Un;
-import sun.nio.ch.UnixSocketSelectorProvider;
 
 public class ConnectTest {
 	

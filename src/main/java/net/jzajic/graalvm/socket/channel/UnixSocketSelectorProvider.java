@@ -1,4 +1,4 @@
-package sun.nio.ch;
+package net.jzajic.graalvm.socket.channel;
 
 import java.io.IOException;
 import java.net.ProtocolFamily;
