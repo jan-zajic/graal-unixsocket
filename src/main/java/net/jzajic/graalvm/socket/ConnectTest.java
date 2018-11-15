@@ -2,6 +2,8 @@ package net.jzajic.graalvm.socket;
 
 import java.io.FileDescriptor;
 import java.io.IOException;
+import java.net.UnixAddress;
+import java.net.UnixSocketAddress;
 import java.nio.channels.SocketChannel;
 
 import org.graalvm.nativeimage.StackValue;
@@ -17,12 +19,29 @@ import com.oracle.svm.core.posix.headers.Socket;
 import com.oracle.svm.core.posix.headers.Socket.sockaddr;
 
 import net.jzajic.graalvm.headers.FdUtils.Util_java_io_FileDescriptor;
+import sun.nio.ch.UnixSocketSelectorProvider;
 import net.jzajic.graalvm.headers.Un;
 
 public class ConnectTest {
 	
 	public static void main(String[] args) {
 		String path = args[0];		
+		//testSocketRawApi(path);
+		testSocketJavaApi(path);
+	}
+	
+	private static void testSocketJavaApi(String path) {
+		try {
+			SocketChannel openSocketChannel = UnixSocketSelectorProvider.provider().openSocketChannel();
+			boolean conn = openSocketChannel.connect(new UnixSocketAddress(path));
+			System.out.println("Channel connected: "+conn);
+			openSocketChannel.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	private static void testSocketRawApi(String path) {
 		int fd;
 		try (CCharPointerHolder filePath = CTypeConversion.toCString(path)) {
 			if( (fd = Socket.socket(Socket.AF_UNIX(), Socket.SOCK_STREAM(), 0)) == -1 ) {
