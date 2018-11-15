@@ -65,7 +65,7 @@ public class UnixNet {
 		sockaddr sa_Pointer = StackValue.get(SizeOf.get(Un.sockaddr_un.class));
 		CIntPointer sa_len_Pointer = StackValue.get(CIntPointer.class);
 		sa_len_Pointer.write(SizeOf.get(Un.sockaddr_un.class));
-		if (NET_InetAddressToSockaddr(iao, sa_Pointer, sa_len_Pointer) != 0) {
+		if (UnixNet.inetAddressToSockaddr(iao, sa_Pointer, sa_len_Pointer) != 0) {
 			return IOStatus.THROWN;
 		}
 		rv = Socket.connect(PosixJavaNIOSubstitutions.fdval(fdo), sa_Pointer, sa_len_Pointer.read());
@@ -89,7 +89,7 @@ public class UnixNet {
 		CIntPointer sa_len_Pointer = StackValue.get(CIntPointer.class);
 		sa_len_Pointer.write(JavaNetNetUtilMD.SOCKADDR_LEN());
 		int rv = 0;
-		if (NET_InetAddressToSockaddr(usa, sa, sa_len_Pointer) != 0) {
+		if (UnixNet.inetAddressToSockaddr(usa, sa, sa_len_Pointer) != 0) {
 			return;
 		}
 		rv = JavaNetNetUtilMD.NET_Bind(PosixUtils.getFD(fd), sa, sa_len_Pointer.read());
@@ -98,7 +98,7 @@ public class UnixNet {
 		}
 	}
 
-	static int NET_InetAddressToSockaddr(UnixSocketAddress iaObj, Socket.sockaddr him, CIntPointer len) throws SocketException {
+	static int inetAddressToSockaddr(UnixSocketAddress iaObj, Socket.sockaddr him, CIntPointer len) throws SocketException {
 		Un.sockaddr_un himU = (Un.sockaddr_un) him;
 		himU.set_sun_family(Socket.AF_UNIX());
 		try (CCharPointerHolder filePath = CTypeConversion.toCString(iaObj.getPath())) {
