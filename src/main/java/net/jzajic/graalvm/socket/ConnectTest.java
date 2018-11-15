@@ -22,7 +22,7 @@ import net.jzajic.graalvm.headers.Un;
 public class ConnectTest {
 	
 	public static void main(String[] args) {
-		String path = args[1];		
+		String path = args[0];		
 		int fd;
 		try (CCharPointerHolder filePath = CTypeConversion.toCString(path)) {
 			if( (fd = Socket.socket(Socket.AF_UNIX(), Socket.SOCK_STREAM(), 0)) == -1 ) {
