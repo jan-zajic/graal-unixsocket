@@ -1,6 +1,5 @@
 package com.oracle.svm.core.posix;
 
-import java.io.FileDescriptor;
 import java.net.InetAddress;
 import java.net.SocketException;
 

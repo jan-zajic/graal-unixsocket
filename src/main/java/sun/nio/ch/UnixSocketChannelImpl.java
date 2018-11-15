@@ -7,8 +7,6 @@ import java.net.InetAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
 import java.net.SocketOption;
-import java.net.UnixProtocolFamily;
-import java.net.UnixSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.AlreadyBoundException;
 import java.nio.channels.AlreadyConnectedException;
@@ -24,6 +22,9 @@ import java.util.HashSet;
 import java.util.Set;
 
 import com.oracle.svm.core.posix.UnixNet;
+
+import net.jzajic.graalvm.socket.UnixProtocolFamily;
+import net.jzajic.graalvm.socket.UnixSocketAddress;
 
 /**
  * An implementation of SocketChannels
@@ -441,7 +442,7 @@ class UnixSocketChannelImpl
             return socketAdress;
         }
     }
-
+    
     @Override
     public SocketChannel bind(SocketAddress local) throws IOException {
         synchronized (readLock) {
@@ -455,7 +456,7 @@ class UnixSocketChannelImpl
                         throw new AlreadyBoundException();
                     UnixSocketAddress usa = (local == null) ?
                         new UnixSocketAddress() : (UnixSocketAddress) local;
-                    Net.bind(fd, usa.getAddress(), 0);
+                    UnixNet.bind(fd, usa);
                     this.socketAdress = (UnixSocketAddress) local;
                 }
             }
@@ -507,11 +508,8 @@ class UnixSocketChannelImpl
                                 readerThread = NativeThread.current();
                             }
                             for (;;) {
-                                InetAddress ia = usa.getAddress();
-                                if (ia.isAnyLocalAddress())
-                                    ia = InetAddress.getLocalHost();
                                 n = UnixNet.connect(fd,
-                                                ia);
+                                		usa);
                                 if (  (n == IOStatus.INTERRUPTED)
                                       && isOpen())
                                     continue;
@@ -580,7 +578,7 @@ class UnixSocketChannelImpl
                             if (!isBlocking()) {
                                 for (;;) {
 		                                	n = UnixNet.connect(fd,
-		                                				this.socketAdress.getAddress());
+		                                				this.socketAdress);
                                     if (  (n == IOStatus.INTERRUPTED)
                                           && isOpen())
                                         continue;
@@ -589,7 +587,7 @@ class UnixSocketChannelImpl
                             } else {
                                 for (;;) {
                                     n = UnixNet.connect(fd,
-                                				this.socketAdress.getAddress());
+                                				this.socketAdress);
                                     if (n == 0) {
                                         // Loop in case of
                                         // spurious notifications

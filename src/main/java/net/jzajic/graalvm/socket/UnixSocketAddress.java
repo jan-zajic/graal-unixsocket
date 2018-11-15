@@ -1,4 +1,6 @@
-package java.net;
+package net.jzajic.graalvm.socket;
+
+import java.net.SocketAddress;
 
 public class UnixSocketAddress extends SocketAddress {
 
@@ -13,10 +15,6 @@ public class UnixSocketAddress extends SocketAddress {
 	public UnixSocketAddress(String path) {
 		super();
 		this.path = path;
-	}
-
-	public UnixAddress getAddress() {
-		return new UnixAddress(path);
 	}
 
 	public String getPath() {

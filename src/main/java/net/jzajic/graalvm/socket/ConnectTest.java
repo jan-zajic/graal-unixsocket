@@ -2,8 +2,6 @@ package net.jzajic.graalvm.socket;
 
 import java.io.FileDescriptor;
 import java.io.IOException;
-import java.net.UnixAddress;
-import java.net.UnixSocketAddress;
 import java.nio.channels.SocketChannel;
 
 import org.graalvm.nativeimage.StackValue;
@@ -19,8 +17,8 @@ import com.oracle.svm.core.posix.headers.Socket;
 import com.oracle.svm.core.posix.headers.Socket.sockaddr;
 
 import net.jzajic.graalvm.headers.FdUtils.Util_java_io_FileDescriptor;
-import sun.nio.ch.UnixSocketSelectorProvider;
 import net.jzajic.graalvm.headers.Un;
+import sun.nio.ch.UnixSocketSelectorProvider;
 
 public class ConnectTest {
 	
