@@ -3,11 +3,27 @@ package sun.nio.ch;
 
 import java.io.FileDescriptor;
 import java.io.IOException;
-import java.net.*;
+import java.net.InetAddress;
+import java.net.Socket;
+import java.net.SocketAddress;
+import java.net.SocketOption;
+import java.net.UnixProtocolFamily;
+import java.net.UnixSocketAddress;
 import java.nio.ByteBuffer;
-import java.nio.channels.*;
-import java.nio.channels.spi.*;
-import java.util.*;
+import java.nio.channels.AlreadyBoundException;
+import java.nio.channels.AlreadyConnectedException;
+import java.nio.channels.AsynchronousCloseException;
+import java.nio.channels.ClosedChannelException;
+import java.nio.channels.ConnectionPendingException;
+import java.nio.channels.NoConnectionPendingException;
+import java.nio.channels.NotYetConnectedException;
+import java.nio.channels.SocketChannel;
+import java.nio.channels.spi.SelectorProvider;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+
+import com.oracle.svm.core.posix.UnixNet;
 
 /**
  * An implementation of SocketChannels
@@ -68,12 +84,11 @@ class UnixSocketChannelImpl
 
     // -- End of fields protected by stateLock
 
-
     // Constructor for normal connecting sockets
     //
     UnixSocketChannelImpl(SelectorProvider sp) throws IOException {
         super(sp);
-        this.fd = Net.socket(UnixProtocolFamily.UNIX, true);
+        this.fd = UnixNet.socket(UnixProtocolFamily.UNIX, true);
         this.fdVal = IOUtil.fdVal(fd);
         this.state = ST_UNCONNECTED;
     }
@@ -495,9 +510,8 @@ class UnixSocketChannelImpl
                                 InetAddress ia = usa.getAddress();
                                 if (ia.isAnyLocalAddress())
                                     ia = InetAddress.getLocalHost();
-                                n = Net.connect(fd,
-                                                ia,
-                                                0);
+                                n = UnixNet.connect(fd,
+                                                ia);
                                 if (  (n == IOStatus.INTERRUPTED)
                                       && isOpen())
                                     continue;
@@ -565,9 +579,8 @@ class UnixSocketChannelImpl
                             }
                             if (!isBlocking()) {
                                 for (;;) {
-		                                	n = Net.connect(fd,
-		                                				this.socketAdress.getAddress(),
-			                                      0);
+		                                	n = UnixNet.connect(fd,
+		                                				this.socketAdress.getAddress());
                                     if (  (n == IOStatus.INTERRUPTED)
                                           && isOpen())
                                         continue;
@@ -575,9 +588,8 @@ class UnixSocketChannelImpl
                                 }
                             } else {
                                 for (;;) {
-                                    n = Net.connect(fd,
-                                				this.socketAdress.getAddress(),
-	                                      0);
+                                    n = UnixNet.connect(fd,
+                                				this.socketAdress.getAddress());
                                     if (n == 0) {
                                         // Loop in case of
                                         // spurious notifications
@@ -649,7 +661,7 @@ class UnixSocketChannelImpl
             if (!isConnected())
                 throw new NotYetConnectedException();
             if (isOutputOpen) {
-                Net.shutdown(fd, Net.SHUT_WR);
+            	Net.shutdown(fd, Net.SHUT_WR);
                 if (writerThread != 0)
                     NativeThread.signal(writerThread);
                 isOutputOpen = false;
