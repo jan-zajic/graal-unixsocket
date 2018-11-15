@@ -98,7 +98,7 @@ public class UnixNet {
 		}
 	}
 
-	static int inetAddressToSockaddr(UnixSocketAddress iaObj, Socket.sockaddr him, CIntPointer len) throws SocketException {
+	public static int inetAddressToSockaddr(UnixSocketAddress iaObj, Socket.sockaddr him, CIntPointer len) throws SocketException {
 		Un.sockaddr_un himU = (Un.sockaddr_un) him;
 		himU.set_sun_family(Socket.AF_UNIX());
 		try (CCharPointerHolder filePath = CTypeConversion.toCString(iaObj.getPath())) {
@@ -283,7 +283,7 @@ public class UnixNet {
 		}
 	}
 
-	static int handleSocketError(int errorValue) throws IOException {
+	public static int handleSocketError(int errorValue) throws IOException {
 		IOException xn;
 		final String exceptionString = "NioSocketError";
 		if (errorValue == Errno.EINPROGRESS()) {
