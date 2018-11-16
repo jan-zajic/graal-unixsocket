@@ -228,6 +228,13 @@ public class UnixNet {
 					}
 				}
 			}
+			
+			if (opt == Socket.SO_RCVTIMEO() || opt == Socket.SO_SNDTIMEO()) {
+				System.out.println("setting SO_RCVTIMEO");
+        //DefaultNativeTimeval t = new DefaultNativeTimeval(Runtime.getSystemRuntime());
+        //t.setTime(new long [] {optval / 1000, ((long)optval % 1000) * 1000});        
+			}
+			
 			n = Socket.setsockopt(fdval(fdo), level, opt, parg, (int) arglen);
 		} else {
 			n = Socket.setsockopt(fdval(fdo), level, opt, parg, (int) arglen);
