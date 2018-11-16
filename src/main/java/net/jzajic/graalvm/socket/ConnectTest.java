@@ -33,6 +33,7 @@ public class ConnectTest {
 			SocketChannel openSocketChannel = UnixSocketSelectorProvider.provider().openSocketChannel();
 			boolean conn = openSocketChannel.connect(new UnixSocketAddress(path));
 			System.out.println("Channel connected: "+conn);
+			openSocketChannel.setOption(UnixSocketOptions.SO_RCVTIMEO, 10);
 			openSocketChannel.close();
 		} catch (IOException e) {
 			e.printStackTrace();
