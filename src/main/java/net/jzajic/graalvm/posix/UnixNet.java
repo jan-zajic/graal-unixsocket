@@ -8,6 +8,7 @@ import java.net.SocketOption;
 import java.net.StandardSocketOptions;
 
 import org.graalvm.nativeimage.StackValue;
+import org.graalvm.nativeimage.c.constant.CConstant;
 import org.graalvm.nativeimage.c.struct.SizeOf;
 import org.graalvm.nativeimage.c.type.CCharPointer;
 import org.graalvm.nativeimage.c.type.CIntPointer;
@@ -86,6 +87,7 @@ public class UnixNet {
 		return PosixUtils.getFD(fdo);
 	}
 
+	@CConstant
 	static int SOCKADDR_LEN() {
 		return SizeOf.get(Un.sockaddr_un.class);
 	}
