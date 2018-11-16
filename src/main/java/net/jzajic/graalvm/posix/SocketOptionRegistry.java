@@ -9,6 +9,9 @@ import java.net.StandardSocketOptions;
 import java.util.HashMap;
 import java.util.Map;
 
+import net.jzajic.graalvm.socket.UnixProtocolFamily;
+import net.jzajic.graalvm.socket.UnixSocketOptions;
+
 class SocketOptionRegistry {                                                   
     private SocketOptionRegistry() { }                                         
     private static class RegistryKey {                                         
@@ -51,6 +54,8 @@ class SocketOptionRegistry {
             map.put(new RegistryKey(StandardSocketOptions.IP_MULTICAST_IF, StandardProtocolFamily.INET6), new OptionKey(41, IPV6_MULTICAST_IF));
             map.put(new RegistryKey(StandardSocketOptions.IP_MULTICAST_TTL, StandardProtocolFamily.INET6), new OptionKey(41, IPV6_MULTICAST_HOPS));
             map.put(new RegistryKey(StandardSocketOptions.IP_MULTICAST_LOOP, StandardProtocolFamily.INET6), new OptionKey(41, IPV6_MULTICAST_LOOP));
+            map.put(new RegistryKey(UnixSocketOptions.SO_PEERCRED, UnixProtocolFamily.UNIX), new OptionKey(SOL_SOCKET,18));
+            map.put(new RegistryKey(UnixSocketOptions.SO_RCVTIMEO, UnixNet.UNSPEC), new OptionKey(SOL_SOCKET,0x1012));
             return map;                                                        
         }                                                                      
     }                                                                          
