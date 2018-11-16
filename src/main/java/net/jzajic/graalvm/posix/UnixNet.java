@@ -8,7 +8,6 @@ import java.net.SocketOption;
 import java.net.StandardSocketOptions;
 
 import org.graalvm.nativeimage.StackValue;
-import org.graalvm.nativeimage.c.constant.CConstant;
 import org.graalvm.nativeimage.c.struct.SizeOf;
 import org.graalvm.nativeimage.c.type.CCharPointer;
 import org.graalvm.nativeimage.c.type.CIntPointer;
@@ -26,6 +25,7 @@ import com.oracle.svm.core.posix.headers.NetinetIn;
 import com.oracle.svm.core.posix.headers.Poll;
 import com.oracle.svm.core.posix.headers.Socket;
 import com.oracle.svm.core.posix.headers.Socket.sockaddr;
+import com.oracle.svm.core.posix.headers.Time;
 
 import net.jzajic.graalvm.headers.FdUtils.Util_java_io_FileDescriptor;
 import net.jzajic.graalvm.headers.Un;
@@ -139,6 +139,7 @@ public class UnixNet {
 	private static int getIntOption0(FileDescriptor fdo, boolean mayNeedConversion, int level, int opt) throws IOException {
 		CIntPointer result_Pointer = StackValue.get(CIntPointer.class);
 		Socket.linger linger = StackValue.get(Socket.linger.class);
+		Time.timeval timeVal = StackValue.get(Time.timeval.class);
 		CCharPointer carg_Pointer = StackValue.get(CCharPointer.class);
 		VoidPointer arg;
 		CIntPointer arglen_Pointer = StackValue.get(CIntPointer.class);
@@ -153,6 +154,10 @@ public class UnixNet {
 		if (level == Socket.SOL_SOCKET() && opt == Socket.SO_LINGER()) {
 			arg = (VoidPointer) linger;
 			arglen_Pointer.write(SizeOf.get(Socket.linger.class));
+		}
+		if (opt == Socket.SO_RCVTIMEO() || opt == Socket.SO_SNDTIMEO()) {
+			arg = (VoidPointer) timeVal;
+			arglen_Pointer.write(SizeOf.get(Time.timeval.class));
 		}
 		if (mayNeedConversion) {
 			CIntPointer socklen_Pointer = StackValue.get(CIntPointer.class);
@@ -182,6 +187,9 @@ public class UnixNet {
 		}
 		if (level == Socket.SOL_SOCKET() && opt == Socket.SO_LINGER()) {
 			return CTypeConversion.toBoolean(linger.l_onoff()) ? linger.l_linger() : -1;
+		}
+		if (opt == Socket.SO_RCVTIMEO() || opt == Socket.SO_SNDTIMEO()) {
+			return (int) (timeVal.tv_sec() * 1000 + timeVal.tv_usec() / 1000);
 		}
 		return result_Pointer.read();
 	}
@@ -232,9 +240,13 @@ public class UnixNet {
 				}
 			}
 			
-			if (opt == Socket.SO_RCVTIMEO() || opt == Socket.SO_SNDTIMEO()) {				
-        //DefaultNativeTimeval t = new DefaultNativeTimeval(Runtime.getSystemRuntime());
-        //t.setTime(new long [] {optval / 1000, ((long)optval % 1000) * 1000});        
+			if (opt == Socket.SO_RCVTIMEO() || opt == Socket.SO_SNDTIMEO()) {
+				System.out.println("Set timeval socket opt");
+				arglen = SizeOf.get(Time.timeval.class);
+				Time.timeval timeval = StackValue.get(Time.timeval.class);				
+				timeval.set_tv_sec(arg / 1000);
+				timeval.set_tv_usec(((long)arg % 1000) * 1000);
+				parg = (WordPointer) timeval;
 			}
 			
 			n = Socket.setsockopt(fdval(fdo), level, opt, parg, (int) arglen);
