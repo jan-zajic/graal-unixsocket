@@ -254,11 +254,13 @@ public class UnixSocket extends java.net.Socket {
 
   @Override
   public void setSoTimeout(int timeout) throws SocketException {
+  		/* BUG: temporarily disabled
       try {
           chan.setOption(UnixSocketOptions.SO_RCVTIMEO, Integer.valueOf(timeout));
       } catch (IOException e) {
           throw (SocketException)new SocketException().initCause(e);
       }
+      */
   }
   
   private void ignore() {
