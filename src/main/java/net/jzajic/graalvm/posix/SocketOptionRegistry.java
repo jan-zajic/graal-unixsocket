@@ -36,7 +36,7 @@ class SocketOptionRegistry {
     
     private static class LazyInitialization {                                  
         static final Map<RegistryKey,OptionKey> options = options();   
-                
+           
         private static Map<RegistryKey,OptionKey> options() {                  
             Map<RegistryKey,OptionKey> map =                                   
                 new HashMap<RegistryKey,OptionKey>();                          
@@ -55,7 +55,7 @@ class SocketOptionRegistry {
             map.put(new RegistryKey(StandardSocketOptions.IP_MULTICAST_TTL, StandardProtocolFamily.INET6), new OptionKey(41, IPV6_MULTICAST_HOPS));
             map.put(new RegistryKey(StandardSocketOptions.IP_MULTICAST_LOOP, StandardProtocolFamily.INET6), new OptionKey(41, IPV6_MULTICAST_LOOP));
             map.put(new RegistryKey(UnixSocketOptions.SO_PEERCRED, UnixProtocolFamily.UNIX), new OptionKey(SOL_SOCKET, 17));
-            map.put(new RegistryKey(UnixSocketOptions.SO_RCVTIMEO, UnixNet.UNSPEC), new OptionKey(SOL_SOCKET, SO_RCVTIMEO));
+            map.put(new RegistryKey(UnixSocketOptions.SO_RCVTIMEO, UnixNet.UNSPEC), new OptionKey(SOL_SOCKET, 20));
             return map;                                                        
         }                                                                      
     }
