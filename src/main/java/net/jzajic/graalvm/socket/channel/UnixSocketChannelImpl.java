@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.net.Socket;
 import java.net.SocketAddress;
 import java.net.SocketOption;
+import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
 import java.nio.channels.AlreadyBoundException;
 import java.nio.channels.AlreadyConnectedException;
@@ -30,6 +31,7 @@ import net.jzajic.graalvm.posix.Native;
 import net.jzajic.graalvm.posix.UnixNet;
 import net.jzajic.graalvm.socket.UnixProtocolFamily;
 import net.jzajic.graalvm.socket.UnixSocketAddress;
+import net.jzajic.graalvm.socket.UnixSocketOptions;
 
 /**
  * An implementation of SocketChannels
@@ -127,6 +129,11 @@ class UnixSocketChannelImpl
 
 		private static Set<SocketOption<?>> defaultOptions() {
 			HashSet<SocketOption<?>> set = new HashSet<SocketOption<?>>(8);
+			set.add(UnixSocketOptions.SO_PEERCRED);
+			set.add(UnixSocketOptions.SO_RCVTIMEO);
+			set.add(StandardSocketOptions.SO_SNDBUF);
+			set.add(StandardSocketOptions.SO_RCVBUF);
+			set.add(StandardSocketOptions.SO_KEEPALIVE);
 			return Collections.unmodifiableSet(set);
 		}
 	}
