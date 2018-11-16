@@ -218,6 +218,9 @@ public class UnixNet {
 				linger.set_l_linger(0);
 			}
 		}
+		
+		System.out.println("SO_RCVTIMEO: "+Socket.SO_RCVTIMEO() + ", mayNeedConversion: " + mayNeedConversion + ", opt: "+opt);
+		
 		if (mayNeedConversion) {
 			CIntPointer bufsize = null;
 			if (IsDefined.__linux__()) {
@@ -229,8 +232,7 @@ public class UnixNet {
 				}
 			}
 			
-			if (opt == Socket.SO_RCVTIMEO() || opt == Socket.SO_SNDTIMEO()) {
-				System.out.println("setting SO_RCVTIMEO");
+			if (opt == Socket.SO_RCVTIMEO() || opt == Socket.SO_SNDTIMEO()) {				
         //DefaultNativeTimeval t = new DefaultNativeTimeval(Runtime.getSystemRuntime());
         //t.setTime(new long [] {optval / 1000, ((long)optval % 1000) * 1000});        
 			}
