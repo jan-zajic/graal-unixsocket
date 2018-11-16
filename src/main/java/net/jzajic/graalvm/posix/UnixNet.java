@@ -87,15 +87,12 @@ public class UnixNet {
 		return PosixUtils.getFD(fdo);
 	}
 
-	@CConstant
-	static int SOCKADDR_LEN() {
-		return SizeOf.get(Un.sockaddr_un.class);
-	}
+	static final int SOCKADDR_LEN = SizeOf.get(Un.sockaddr_un.class);
 
 	public static void bind(FileDescriptor fd, UnixSocketAddress usa) throws IOException {
-		Socket.sockaddr sa = StackValue.get(SOCKADDR_LEN());
+		Socket.sockaddr sa = StackValue.get(SOCKADDR_LEN);
 		CIntPointer sa_len_Pointer = StackValue.get(CIntPointer.class);
-		sa_len_Pointer.write(SOCKADDR_LEN());
+		sa_len_Pointer.write(SOCKADDR_LEN);
 		int rv = 0;
 		if (UnixNet.inetAddressToSockaddr(usa, sa, sa_len_Pointer) != 0) {
 			return;
@@ -338,9 +335,9 @@ public class UnixNet {
 	
 	public static UnixSocketAddress getsockname(int sockfd) {
 		UnixSocketAddress local = new UnixSocketAddress();
-		Socket.sockaddr sa = StackValue.get(SOCKADDR_LEN());
+		Socket.sockaddr sa = StackValue.get(SOCKADDR_LEN);
 		CIntPointer sa_len_Pointer = StackValue.get(CIntPointer.class);
-		sa_len_Pointer.write(SOCKADDR_LEN());
+		sa_len_Pointer.write(SOCKADDR_LEN);
 		if (Socket.getsockname(sockfd, sa, sa_len_Pointer) < 0) {
 			throw new Error(Native.getLastErrorString());
 		}
@@ -351,9 +348,9 @@ public class UnixNet {
 
 	public static UnixSocketAddress getpeername(int sockfd) {
 		UnixSocketAddress remote = new UnixSocketAddress();
-		Socket.sockaddr sa = StackValue.get(SOCKADDR_LEN());
+		Socket.sockaddr sa = StackValue.get(SOCKADDR_LEN);
 		CIntPointer sa_len_Pointer = StackValue.get(CIntPointer.class);
-		sa_len_Pointer.write(SOCKADDR_LEN());
+		sa_len_Pointer.write(SOCKADDR_LEN);
 		if (Socket.getpeername(sockfd, sa, sa_len_Pointer) < 0) {
 			throw new Error(Native.getLastErrorString());
 		}
