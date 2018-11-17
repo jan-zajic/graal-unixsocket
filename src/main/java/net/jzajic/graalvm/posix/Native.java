@@ -13,38 +13,30 @@ import com.oracle.svm.core.posix.headers.Unistd;
 
 public class Native {
 
-	public static int read(int fd, CCharPointer pointer, ByteBuffer dst) throws IOException {
-		if (dst == null) {
-			throw new NullPointerException("Destination buffer cannot be null");
-		}
-		
+	public static int read(int fd, int remaining, CCharPointer pointer) throws IOException {
 		int n;
+		int readed = 0;
 		do {
-			n = (int) Unistd.read(fd, pointer, WordFactory.unsigned(dst.remaining())).rawValue();
-		} while (n < 0 && Errno.EINTR() == getLastError());
+			n = (int) Unistd.read(fd, pointer, WordFactory.unsigned(remaining-readed)).rawValue();
+			if(n >= 0) {
+				readed += n;
+			}
+		} while (readed < remaining && n < 0 && Errno.EINTR() == getLastError());
 
-		if (n > 0) {
-			dst.position(dst.position() + n);
-		}
-
-		return n;
+		return readed;
 	}
 
-	public static int write(int fd, CCharPointer pointer, ByteBuffer src) throws IOException {
-		if (src == null) {
-			throw new NullPointerException("Source buffer cannot be null");
-		}
-
+	public static int write(int fd, int size, CCharPointer pointer) throws IOException {
 		int n;
+		int written = 0;
 		do {
-			n = (int) Unistd.write(fd, pointer, WordFactory.unsigned(src.remaining())).rawValue();
-		} while (n < 0 && Errno.EINTR() == getLastError());
+			n = (int) Unistd.write(fd, pointer, WordFactory.unsigned(size-written)).rawValue();
+			if(n >= 0) {
+				written += n;
+			}
+		} while (written < size && n < 0 && Errno.EINTR() == getLastError());
 
-		if (n > 0) {
-			src.position(src.position() + n);
-		}
-
-		return n;
+		return written;
 	}
 
 	public static String getLastErrorString() {

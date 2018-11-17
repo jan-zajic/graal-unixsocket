@@ -20,8 +20,10 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.graalvm.nativeimage.PinnedObject;
 import org.graalvm.nativeimage.UnmanagedMemory;
 import org.graalvm.nativeimage.c.type.CCharPointer;
+import org.graalvm.nativeimage.c.type.CIntPointer;
 import org.graalvm.nativeimage.c.type.CTypeConversion;
 import org.graalvm.word.WordFactory;
 
@@ -152,13 +154,10 @@ class UnixSocketChannelImpl
 
 	@Override
 	public int read(ByteBuffer dst) throws IOException {
-		CCharPointer buf = UnmanagedMemory.malloc(WordFactory.unsigned(dst.remaining()));
-		ByteBuffer buffer = CTypeConversion.asByteBuffer(buf, dst.remaining());
-		try {
-			int n = Native.read(this.fdVal, buf, buffer);
-			buffer.flip();
+		byte[] buffer = new byte[dst.remaining()]; 
+		try (PinnedObject pin = PinnedObject.create(buffer)) {
+			int n = Native.read(this.fdVal, buffer.length, pin.addressOfArrayElement(0));
 			dst.put(buffer);
-
 			switch (n) {
 			case 0:
 				return -1;
@@ -174,8 +173,6 @@ class UnixSocketChannelImpl
 				return n;
 			}
 			}
-		} finally {
-			UnmanagedMemory.free(buf);
 		}
 	}
 
@@ -199,13 +196,9 @@ class UnixSocketChannelImpl
 		int r = src.remaining();
 		int n;
 
-		CCharPointer buf = UnmanagedMemory.malloc(WordFactory.unsigned(r));
-		ByteBuffer buffer = CTypeConversion.asByteBuffer(buf, r);
-		try {
-			buffer.put(src);
-			buffer.position(0);
-
-			n = Native.write(fdVal, buf, buffer);
+		byte[] buffer = new byte[r];
+		try (PinnedObject pin = PinnedObject.create(buffer)) {
+			n = Native.write(fdVal, r, pin.addressOfArrayElement(0));
 
 			if (n >= 0) {
 				if (n < r) {
@@ -219,8 +212,6 @@ class UnixSocketChannelImpl
 					throw new IOException(Native.getLastErrorString());
 				}
 			}
-		} finally {
-			UnmanagedMemory.free(buf);
 		}
 
 		return n;
