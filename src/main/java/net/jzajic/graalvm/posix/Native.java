@@ -1,7 +1,6 @@
 package net.jzajic.graalvm.posix;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
 import org.graalvm.nativeimage.c.type.CCharPointer;
 import org.graalvm.word.WordFactory;

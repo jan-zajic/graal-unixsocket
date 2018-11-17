@@ -197,6 +197,7 @@ class UnixSocketChannelImpl
 		int n;
 
 		byte[] buffer = new byte[r];
+		ByteBuffer.wrap(buffer).put(src);
 		try (PinnedObject pin = PinnedObject.create(buffer)) {
 			n = Native.write(fdVal, r, pin.addressOfArrayElement(0));
 
