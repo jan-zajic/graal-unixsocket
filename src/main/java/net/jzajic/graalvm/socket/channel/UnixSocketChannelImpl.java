@@ -20,6 +20,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.graalvm.nativeimage.UnmanagedMemory;
 import org.graalvm.nativeimage.c.type.CCharPointer;
 import org.graalvm.nativeimage.c.type.CTypeConversion;
 import org.graalvm.word.WordFactory;
@@ -152,7 +153,7 @@ class UnixSocketChannelImpl
 
 	@Override
 	public int read(ByteBuffer dst) throws IOException {
-		CCharPointer buf = LibC.malloc(WordFactory.unsigned(dst.remaining()));
+		CCharPointer buf = UnmanagedMemory.malloc(WordFactory.unsigned(dst.remaining()));
 		ByteBuffer buffer = CTypeConversion.asByteBuffer(buf, dst.remaining());
 		try {
 			int n = Native.read(this.fdVal, buf, buffer);
@@ -175,7 +176,7 @@ class UnixSocketChannelImpl
 			}
 			}
 		} finally {
-			LibC.free(buf);
+			UnmanagedMemory.free(buf);
 		}
 	}
 
@@ -199,7 +200,7 @@ class UnixSocketChannelImpl
 		int r = src.remaining();
 		int n;
 
-		CCharPointer buf = LibC.malloc(WordFactory.unsigned(r));
+		CCharPointer buf = UnmanagedMemory.malloc(WordFactory.unsigned(r));
 		ByteBuffer buffer = CTypeConversion.asByteBuffer(buf, r);
 		try {
 			buffer.put(src);
@@ -220,7 +221,7 @@ class UnixSocketChannelImpl
 				}
 			}
 		} finally {
-			LibC.free(buf);
+			UnmanagedMemory.free(buf);
 		}
 
 		return n;
