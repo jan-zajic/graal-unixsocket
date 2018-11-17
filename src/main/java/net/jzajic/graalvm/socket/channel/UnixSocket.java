@@ -227,11 +227,13 @@ public class UnixSocket extends java.net.Socket {
 
   @Override
   public void setKeepAlive(boolean on) throws SocketException {
+  		/* BUG: temporarily disabled
       try {
           chan.setOption(StandardSocketOptions.SO_KEEPALIVE, Boolean.valueOf(on));
       } catch (IOException e) {
           throw (SocketException)new SocketException().initCause(e);
       }
+      */
   }
 
   @Override
