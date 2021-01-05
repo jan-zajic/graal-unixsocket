@@ -27,7 +27,7 @@ import org.graalvm.nativeimage.c.type.CIntPointer;
 import org.graalvm.nativeimage.c.type.CTypeConversion;
 import org.graalvm.word.WordFactory;
 
-import com.oracle.svm.core.posix.headers.Errno;
+import com.oracle.svm.core.headers.Errno;
 
 import net.jzajic.graalvm.posix.Native;
 import net.jzajic.graalvm.posix.UnixNet;
